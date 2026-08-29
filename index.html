@@ -27,6 +27,14 @@ h1 span{color:var(--accent)}
 .seg button{appearance:none;background:none;border:0;color:var(--ink2);font:inherit;font-size:13px;
   padding:6px 16px;border-radius:6px;cursor:pointer}
 .seg button.on{background:var(--accent);color:#06120c;font-weight:600}
+ 
+.sel{background:var(--panel2);border:1px solid var(--line);border-radius:9px;
+  color:var(--ink);font:inherit;font-size:13px;padding:7px 11px;cursor:pointer;
+  max-width:340px}
+.sel:focus{outline:2px solid var(--accent);outline-offset:1px}
+.closed{display:inline-block;margin-left:8px;padding:2px 8px;border-radius:20px;
+  background:var(--panel2);border:1px solid var(--line);font-size:11px;
+  color:var(--ink2);font-family:var(--mono)}
 
 .sub{margin:10px 0 20px;font-size:13px;color:var(--ink2);line-height:1.5}
 .sub b{color:var(--ink);font-family:var(--mono)}
@@ -92,6 +100,7 @@ tr.det th,tr.det td{font-size:12px;padding:6px 8px;border-bottom:1px solid var(-
     <button data-p="week" class="on">This week</button>
     <button data-p="month">This month</button>
   </div>
+  <select class="sel" id="period" aria-label="Which period to show"></select>
 </header>
 <div class="meta" id="meta">loading…</div>
 
@@ -104,15 +113,11 @@ tr.det th,tr.det td{font-size:12px;padding:6px 8px;border-bottom:1px solid var(-
   <div class="foot" id="foot"></div>
 </div>
 
-<div class="card">
-  <h3 id="archh">Past weeks</h3>
-  <div class="body"><div class="arch" id="arch"></div></div>
-</div>
 
 <script>
 
 
-var D=null, P="week", OPEN={};
+var D=null, P="week", SEL="", OPEN={};
 
 var $=function(s){return document.querySelector(s);};
 var esc=function(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){
@@ -131,11 +136,57 @@ var usd=function(n){return "$"+Math.round(n||0).toLocaleString();};
 
 
 
-function elapsed(w){
+function periods(){
+  var out=[], cur=D.current&&D.current[P];
+  if(cur) out.push({key:cur.key, live:true, p:cur});
+  ((P==="week"?D.weeks:D.months)||[]).forEach(function(a){
+    if(a&&a.key) out.push({key:a.key, live:false, p:a});
+  });
+  return out;
+}
+
+
+function chosen(){
+  var list=periods();
+  if(!list.length) return null;
+  var hit=list.filter(function(x){return x.key===SEL;})[0];
+  return hit||list[0];
+}
+var MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+var MONL=["January","February","March","April","May","June","July","August",
+          "September","October","November","December"];
+var dt_=function(s){return new Date(s+"T12:00:00Z");};
+
+function plabel(x){
+  var p=x.p, lab;
+  if(P==="month"){ var d=dt_(p.from); lab=MONL[d.getUTCMonth()]+" "+d.getUTCFullYear(); }
+  else { var a=dt_(p.from), b=dt_(p.to);
+    lab=MON[a.getUTCMonth()]+" "+a.getUTCDate()+" – "+MON[b.getUTCMonth()]+" "+b.getUTCDate(); }
+  
+
+  if(x.live) lab+=P==="week"?"  ·  this week":"  ·  this month";
+  else if((p.pods||[])[0]) lab+="  ·  "+p.pods[0].name+" won";
+  return lab;
+}
+
+function fillPeriods(){
+  var list=periods(), sel=chosen();
+  $("#period").innerHTML=list.map(function(x){
+    return '<option value="'+esc(x.key)+'"'+(sel&&x.key===sel.key?' selected':'')+'>'
+      +esc(plabel(x))+'</option>';
+  }).join("");
+  
+  $("#period").disabled=list.length<2;
+}
+
+
+
+function elapsed(w, live){
   var t=new Date(); var today=t.getFullYear()+"-"+String(t.getMonth()+1).padStart(2,"0")
     +"-"+String(t.getDate()).padStart(2,"0");
   var day=function(s){return new Date(s+"T12:00:00Z").getTime();};
   var total=Math.round((day(w.to)-day(w.from))/864e5)+1;
+  if(!live) return {total:total,done:total};
   var done=Math.min(total,Math.max(1,Math.round((day(today)-day(w.from))/864e5)+1));
   return {total:total,done:done};
 }
@@ -148,10 +199,12 @@ function pace(v,target){
 
 function draw(){
   if(!D){return;}
-  var w=D.current&&D.current[P];
-  if(!w){$("#podium").innerHTML='<div class="empty">No data for this period yet.</div>';return;}
+  fillPeriods();
+  var sel=chosen();
+  if(!sel){$("#podium").innerHTML='<div class="empty">No data for this period yet.</div>';return;}
+  var w=sel.p, live=sel.live;
   var T=D.targets||{conceptsPerWeek:16,spendPerMonth:125000};
-  var el=elapsed(w);
+  var el=elapsed(w, live);
 
   
 
@@ -209,34 +262,44 @@ function draw(){
     +'<span>Content + unowned <b>'+usd(w.unowned)+'</b></span>'
     +'<span>Closes <b>'+esc(w.closesAt||"")+'</b></span>';
 
-  $("#sub").innerHTML='<b>'+esc(w.from)+'</b> → <b>'+esc(w.to)+'</b> · day <b>'+el.done
-    +'</b> of <b>'+el.total+'</b> · ranked by <b>spend</b>, concepts launched breaks a tie'
+  $("#sub").innerHTML='<b>'+esc(w.from)+'</b> → <b>'+esc(w.to)+'</b> · '
+    +(live?('day <b>'+el.done+'</b> of <b>'+el.total+'</b>')
+          :('<b>'+el.total+'</b> days, closed'))
+    +' · ranked by <b>spend</b>, concepts launched breaks a tie'
     +' · targets <b>'+(T.conceptsPerWeek||16)+'</b> concepts/week and <b>'
-    +usd(T.spendPerMonth||125000)+'</b>/month per pod';
+    +usd(T.spendPerMonth||125000)+'</b>/month per pod'
+    
 
-  var arr=(P==="week"?D.weeks:D.months)||[];
-  $("#archh").textContent=P==="week"?"Past weeks":"Past months";
-  $("#arch").innerHTML=arr.length?arr.map(function(a){
-    var win=(a.pods||[])[0];
-    return '<div class="ac"><div class="k">'+esc(a.key)+'  ('+esc(a.from)+' → '+esc(a.to)+')</div>'
-      +'<div class="w"><em>🏆</em> '+esc(win?win.name:"—")+'</div>'
-      +'<div class="l">'+(win?usd(win.spend)+' · '+win.launched+' concepts':"")+'</div></div>';
-  }).join(""):'<div class="empty">Nothing archived yet — the first week logs away Monday at 3am ET.</div>';
+    +(periods().length<2
+        ? ' · history appears here after the first '
+          +(P==="week"?'Monday 3am ET rollover':'month closes')
+        : '');
+
+  
 
   var u=D.updated?new Date(D.updated):null;
   var mins=u?Math.round((Date.now()-u.getTime())/60000):null;
-  $("#meta").textContent="updated "+(mins==null?"—":(mins<1?"just now":mins+" min ago"))
-    +(u?"  ·  "+u.toLocaleString():"")+"  ·  refreshes hourly";
+  $("#meta").innerHTML = live
+    ? esc("updated "+(mins==null?"—":(mins<1?"just now":mins+" min ago"))
+        +(u?"  ·  "+u.toLocaleString():"")+"  ·  refreshes hourly")
+    : esc("closed "+w.to)+' <span class="closed">FINAL</span>';
 }
 
 document.addEventListener("click",function(e){
   var b=e.target.closest("[data-p]");
   if(b){P=b.getAttribute("data-p");
+    
+    
+    SEL="";
     document.querySelectorAll("[data-p]").forEach(function(x){
       x.classList.toggle("on",x.getAttribute("data-p")===P);});
     draw();return;}
   var x=e.target.closest("[data-x]");
   if(x){var k=x.getAttribute("data-x");OPEN[k]=!OPEN[k];draw();}
+});
+
+document.addEventListener("change",function(e){
+  if(e.target&&e.target.id==="period"){ SEL=e.target.value; OPEN={}; draw(); }
 });
 
 function load(){
