@@ -233,8 +233,8 @@ function draw(){
   }).join("");
 
   var det=function(p){
-    if(!p.top||!p.top.length) return '<tr class="det"><td colspan="8"><div class="empty">No spend yet.</div></td></tr>';
-    return '<tr class="det"><td colspan="8"><table><thead><tr><th>Top batches</th><th>Spend</th>'
+    if(!p.top||!p.top.length) return '<tr class="det"><td colspan="7"><div class="empty">No spend yet.</div></td></tr>';
+    return '<tr class="det"><td colspan="7"><table><thead><tr><th>Top batches</th><th>Spend</th>'
       +'<th>Share</th></tr></thead><tbody>'
       +p.top.map(function(t){return '<tr><td class="txt">'+esc(t.label)+'</td><td>'+usd(t.spend)
         +'</td><td>'+(p.spend?(t.spend/p.spend*100).toFixed(1):"0.0")+'%</td></tr>';}).join("")
@@ -243,7 +243,7 @@ function draw(){
 
   var tot=w.pods.reduce(function(a,p){return a+p.spend;},0);
   $("#tbl").innerHTML='<thead><tr><th>#</th><th>Pod</th><th>Spend</th><th>Share</th>'
-    +'<th>Concepts</th><th>Batches</th><th>Purch</th><th>ROAS</th></tr></thead><tbody>'
+    +'<th>Concepts</th><th>Live batches</th><th>ROAS</th></tr></thead><tbody>'
    +w.pods.map(function(p){
       var open=!!OPEN[P+"|"+p.id];
       return '<tr><td>'+p.rank+'</td>'
@@ -251,7 +251,7 @@ function draw(){
           +'">▸</span> <b>'+esc(p.name)+'</b> <span style="color:var(--ink3)">'
           +esc(p.lead||"")+'</span></td>'
         +'<td>'+usd(p.spend)+'</td><td>'+(tot?(p.spend/tot*100).toFixed(1):"0.0")+'%</td>'
-        +'<td><b>'+p.launched+'</b></td><td>'+p.batches+'</td><td>'+p.purch+'</td>'
+        +'<td><b>'+p.launched+'</b></td><td>'+p.batches+'</td>'
         +'<td>'+(p.spend?(p.value/p.spend).toFixed(2):"—")+'</td></tr>'
         +(open?det(p):"");
     }).join("")
