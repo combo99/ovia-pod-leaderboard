@@ -217,7 +217,9 @@ function draw(){
     return '<div class="pod r'+(i+1)+'">'
       +'<div class="rk">'+(medal[i]||("#"+(i+1)))+'</div>'
       +'<div class="nm">'+esc(p.name)+'</div>'
-      +'<div class="ld">'+esc(p.lead||"—")+' · '+esc((p.members||[]).join(", "))+'</div>'
+      
+
+      +'<div class="ld">'+esc(p.lead||"—")+'</div>'
       +'<div class="big">'+usd(p.spend)+'</div>'
       +'<div class="cap">spend</div>'
       +'<div class="pace"><div class="lab"><span>vs pace</span><em>'
