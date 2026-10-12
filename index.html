@@ -262,6 +262,9 @@ function draw(){
   $("#foot").innerHTML='<span>Pods <b>'+usd(tot)+'</b></span>'
     +'<span>Account <b>'+usd(w.acct)+'</b></span>'
     +'<span>Content + unowned <b>'+usd(w.unowned)+'</b></span>'
+    +((w.bounties||[]).length?'<span>Bounties, not in pod spend <b>'
+      +w.bounties.map(function(b){return esc(String(b.editor).split(" ")[0])+" "+usd(b.spend);}).join(" · ")
+      +'</b></span>':'')
     +'<span>Closes <b>'+esc(w.closesAt||"")+'</b></span>';
 
   $("#sub").innerHTML='<b>'+esc(w.from)+'</b> → <b>'+esc(w.to)+'</b> · '
