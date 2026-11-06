@@ -213,7 +213,9 @@ function draw(){
   var sT=fullSpend*el.done/el.total, cT=fullConc*el.done/el.total;
 
   var medal=["🥇","🥈","🥉"];
-  $("#podium").innerHTML=w.pods.map(function(p,i){
+  
+
+  $("#podium").innerHTML=w.pods.slice(0,3).map(function(p,i){
     return '<div class="pod r'+(i+1)+'">'
       +'<div class="rk">'+(medal[i]||("#"+(i+1)))+'</div>'
       +'<div class="nm">'+esc(p.name)+'</div>'
@@ -248,7 +250,7 @@ function draw(){
     +'<th>Concepts</th><th>Live batches</th><th>ROAS</th></tr></thead><tbody>'
    +w.pods.map(function(p){
       var open=!!OPEN[P+"|"+p.id];
-      return '<tr><td>'+p.rank+'</td>'
+      return '<tr><td>'+(medal[p.rank-1]||p.rank)+'</td>'
         +'<td class="txt"><span class="exp'+(open?" open":"")+'" data-x="'+esc(P+"|"+p.id)
           +'">▸</span> <b>'+esc(p.name)+'</b> <span style="color:var(--ink3)">'
           +esc(p.lead||"")+'</span></td>'
